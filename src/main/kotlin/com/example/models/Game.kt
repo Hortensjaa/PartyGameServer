@@ -21,6 +21,7 @@ class Game {
     }
 
     fun connectPlayer(player: String, session: WebSocketSession): String {
+        println("user $player connected")
         state.update {
             if(!playerSockets.containsKey(player)) {
                 playerSockets[player] = session
@@ -33,6 +34,7 @@ class Game {
     }
 
     fun disconnectPlayer(player: String) {
+        println("user $player disconnected")
         playerSockets.remove(player)
         state.update {
             it.copy(

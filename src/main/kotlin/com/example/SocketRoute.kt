@@ -18,7 +18,9 @@ fun Route.socket(game: Game) {
                 incoming.consumeEach { frame ->
                     if(frame is Frame.Text) {
                         val action = extractAction(frame.readText())
-                        game.vote(action)
+                        if (action != null) {
+                            game.vote(action)
+                        }
                     }
                 }
             } catch(e: Exception) {
@@ -30,11 +32,14 @@ fun Route.socket(game: Game) {
     }
 }
 
-private fun extractAction(message: String): Vote {
+private fun extractAction(message: String): Vote? {
     // make_turn#{...}
     val type = message.substringBefore("#")
     val body = message.substringAfter("#")
     if(type == "make_turn") {
         return Json.decodeFromString(body)
+    } else if (type=="check_connection") {
+        println("Connection checked, everything is alright")
+        return null
     } else throw Exception("")
 }
