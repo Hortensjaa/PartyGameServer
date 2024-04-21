@@ -13,33 +13,38 @@ fun Route.socket(game: Game) {
         webSocket {
             val player = game.connectPlayer("player${(1000..9999).random()}",this)
 
-
             try {
                 incoming.consumeEach { frame ->
                     if(frame is Frame.Text) {
-                        val action = extractAction(frame.readText())
-                        if (action != null) {
-                            game.vote(action)
+                        val message = frame.readText()
+                        val type = message.substringBefore("#")
+                        val body = message.substringAfter("#")
+                        when(type) {
+                            "vote" -> game.vote(Json.decodeFromString(body))
+                            "login" -> game.loginPlayer(body, this)
+                            "check_connection" -> println("Connection checked, everything is alright")
+                            else -> throw Exception("action not known")
                         }
                     }
                 }
             } catch(e: Exception) {
                 e.printStackTrace()
             } finally {
-                game.disconnectPlayer(player)
+                game.disconnectPlayer(player, this)
             }
         }
     }
 }
 
-private fun extractAction(message: String): Vote? {
-    // make_turn#{...}
-    val type = message.substringBefore("#")
-    val body = message.substringAfter("#")
-    if(type == "make_turn") {
-        return Json.decodeFromString(body)
-    } else if (type=="check_connection") {
-        println("Connection checked, everything is alright")
-        return null
-    } else throw Exception("")
-}
+//private fun extractAction(message: String): Vote? {
+//    val type = message.substringBefore("#")
+//    val body = message.substringAfter("#")
+//    when(type) {
+//        "vote" -> return Json.decodeFromString(body)
+//        "check_connection" -> {
+//            println("Connection checked, everything is alright")
+//            return null
+//        }
+//        else -> throw Exception("action not known")
+//    }
+//}

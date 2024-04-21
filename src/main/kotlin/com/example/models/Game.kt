@@ -33,7 +33,8 @@ class Game {
         return player
     }
 
-    fun disconnectPlayer(player: String) {
+    // socket actions
+    fun disconnectPlayer(player: String, session: WebSocketSession) {
         println("user $player disconnected")
         playerSockets.remove(player)
         state.update {
@@ -49,6 +50,22 @@ class Game {
                 Json.encodeToString(state)
             )
         }
+    }
+
+    // game actions
+    fun loginPlayer(name: String, session: WebSocketSession) {
+        var toDelete: String? = null
+        playerSockets.forEach { (t, u) ->
+            if (u == session) {
+                toDelete = t
+            }
+        }
+        if (toDelete != null) {
+            playerSockets.remove(toDelete)
+            playerSockets += (name to session)
+        }
+        println("player added B)")
+        println(playerSockets)
     }
 
     private fun everyoneVoted(): Boolean {
