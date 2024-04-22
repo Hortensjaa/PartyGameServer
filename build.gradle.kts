@@ -82,4 +82,14 @@ dependencies {
             }
         }
     }
+
+    tasks.jar {
+        manifest {
+            attributes["Main-Class"] = "com.example.ApplicationKt"
+        }
+        configurations["compileClasspath"].forEach { file: File ->
+            from(zipTree(file.absoluteFile))
+        }
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
 }
