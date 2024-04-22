@@ -11,6 +11,8 @@ import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
 class Game {
+    // todo: here will be big changes because I want let many people play on the same device
+    //  so for now it is okay, but i will change it later
     private val state = MutableStateFlow(GameState())
     private val playerSockets = ConcurrentHashMap<String, WebSocketSession>()
     private val gameScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -20,17 +22,13 @@ class Game {
         state.onEach(::broadcast).launchIn(gameScope)
     }
 
-    fun connectPlayer(player: String, session: WebSocketSession): String {
-        println("user $player connected")
+    fun connectPlayer(session: WebSocketSession) {
+        println("Anonymous player connected in $session")
+        // placeholder value; should delete later, but without it doesn't work - why?
+        playerSockets["anonymous"] = session
         state.update {
-            if(!playerSockets.containsKey(player)) {
-                playerSockets[player] = session
-            }
-            it.copy(
-                players = it.players + (player to false)
-            )
+            it.copy(message = "someone logged in")
         }
-        return player
     }
 
     // socket actions
@@ -53,19 +51,11 @@ class Game {
     }
 
     // game actions
-    fun loginPlayer(name: String, session: WebSocketSession) {
-        var toDelete: String? = null
-        playerSockets.forEach { (t, u) ->
-            if (u == session) {
-                toDelete = t
-            }
-        }
-        if (toDelete != null) {
-            playerSockets.remove(toDelete)
-            playerSockets += (name to session)
-        }
-        println("player added B)")
+    fun loginPlayer(name: String, session: WebSocketSession): String {
+        playerSockets.remove("anonymous")
+        playerSockets += (name to session)
         println(playerSockets)
+        return name
     }
 
     private fun everyoneVoted(): Boolean {

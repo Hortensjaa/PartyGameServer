@@ -11,7 +11,8 @@ import kotlinx.serialization.json.Json
 fun Route.socket(game: Game) {
     route("/play") {
         webSocket {
-            val player = game.connectPlayer("player${(1000..9999).random()}",this)
+            lateinit var player: String
+            game.connectPlayer(this)
 
             try {
                 incoming.consumeEach { frame ->
@@ -21,7 +22,9 @@ fun Route.socket(game: Game) {
                         val body = message.substringAfter("#")
                         when(type) {
                             "vote" -> game.vote(Json.decodeFromString(body))
-                            "login" -> game.loginPlayer(body, this)
+                            "login" -> {
+                                player = game.loginPlayer(body, this)
+                            }
                             "check_connection" -> println("Connection checked, everything is alright")
                             else -> throw Exception("action not known")
                         }
