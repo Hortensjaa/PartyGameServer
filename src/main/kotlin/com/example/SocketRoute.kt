@@ -11,7 +11,7 @@ import kotlinx.serialization.json.Json
 fun Route.socket(game: Game) {
     route("/play") {
         webSocket {
-            lateinit var player: String
+            var player = "anonymous"
             game.connectPlayer(this)
 
             try {
@@ -38,16 +38,3 @@ fun Route.socket(game: Game) {
         }
     }
 }
-
-//private fun extractAction(message: String): Vote? {
-//    val type = message.substringBefore("#")
-//    val body = message.substringAfter("#")
-//    when(type) {
-//        "vote" -> return Json.decodeFromString(body)
-//        "check_connection" -> {
-//            println("Connection checked, everything is alright")
-//            return null
-//        }
-//        else -> throw Exception("action not known")
-//    }
-//}

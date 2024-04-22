@@ -23,23 +23,26 @@ class Game {
     }
 
     fun connectPlayer(session: WebSocketSession) {
-        println("Anonymous player connected in $session")
         // placeholder value; should delete later, but without it doesn't work - why?
         playerSockets["anonymous"] = session
+        val randomPlayer = "player${(1000..9999).random()}"
         state.update {
-            it.copy(message = "someone logged in")
+            it.copy(message = "$randomPlayer connected")
         }
+        println("Anonymous player connected in $session")
+        println(playerSockets)
     }
 
     // socket actions
     fun disconnectPlayer(player: String, session: WebSocketSession) {
-        println("user $player disconnected")
         playerSockets.remove(player)
         state.update {
             it.copy(
                 players = it.players - player
             )
         }
+        println("user $player disconnected")
+        println(playerSockets)
     }
 
     private suspend fun broadcast(state: GameState) {
@@ -54,6 +57,13 @@ class Game {
     fun loginPlayer(name: String, session: WebSocketSession): String {
         playerSockets.remove("anonymous")
         playerSockets += (name to session)
+        state.update {
+            it.copy(
+                players = it.players + (name to false),
+                message = "$name logged in"
+            )
+        }
+        println("$name logged in")
         println(playerSockets)
         return name
     }
