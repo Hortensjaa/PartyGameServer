@@ -59,7 +59,7 @@ class Game {
         playerSockets += (name to session)
         state.update {
             it.copy(
-                players = it.players + (name to false),
+                players = it.players + (name to true),
                 message = "$name logged in"
             )
         }
@@ -69,28 +69,31 @@ class Game {
     }
 
     private fun everyoneVoted(): Boolean {
-        return state.value.players.all { (_, v) -> v }
+        return state.value.players.all { (_, v) -> !v }
     }
 
     fun vote(voteObject: Vote) {
         val player = voteObject.player
         val vote = voteObject.vote
-        if (state.value.players[player] == false) {
+        if (state.value.players[player] == true) {
             state.update {
                 it.copy(
-                    players = it.players + (player to true),
+                    players = it.players + (player to false),
                     votes = if (state.value.votes[vote] == null)
                         it.votes + (vote to 1)
                     else it.votes + (vote to (state.value.votes[vote]!!+1)),
                 )
             }
         }
+        println("player $player voted for $vote")
+        println(state.value.players)
         if (everyoneVoted()) {
             state.update {
                 it.copy(
                     winner = getWinningPlayer().also { startNewRoundDelayed() }
                 )
             }
+            println("everyone voted")
         }
     }
 
@@ -102,10 +105,10 @@ class Game {
     private fun startNewRoundDelayed() {
         delayGameJob?.cancel()
         delayGameJob = gameScope.launch {
-            delay(5000L)
+            delay(2000L)
             state.update {
                 it.copy(
-                    players = it.players.mapValues { false },
+                    players = it.players.mapValues { true },
                     question = Questions.questions.random(),
                     votes = emptyMap(),
                     winner = null
