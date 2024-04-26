@@ -22,18 +22,20 @@ class Game {
         state.onEach(::broadcast).launchIn(gameScope)
     }
 
+    // socket actions
     fun connectPlayer(session: WebSocketSession) {
         // placeholder value; should delete later, but without it doesn't work - why?
         playerSockets["anonymous"] = session
         val randomPlayer = "player${(1000..9999).random()}"
         state.update {
-            it.copy(message = "$randomPlayer connected")
+            it.copy(
+                message = "$randomPlayer connected"
+            )
         }
         println("Anonymous player connected in $session")
         println(playerSockets)
     }
 
-    // socket actions
     fun disconnectPlayer(player: String, session: WebSocketSession) {
         playerSockets.remove(player)
         state.update {
@@ -54,11 +56,20 @@ class Game {
     }
 
     // game actions
+    fun startGame() {
+        state.update {
+            it.copy(
+                question = Questions.questions.random()
+            )
+        }
+    }
+
     fun loginPlayer(name: String, session: WebSocketSession): String {
         playerSockets.remove("anonymous")
         playerSockets += (name to session)
         state.update {
             it.copy(
+                question = Questions.questions.random(),
                 players = it.players + (name to true),
                 message = "$name logged in"
             )
