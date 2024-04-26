@@ -2,23 +2,23 @@ package com.example.models
 
 object Questions {
     val questions = listOf(
-        // kto...
-        Question(Headers.WHO, "najwięcej kłamie?"),
-        Question(Headers.WHO, "będzie najlepszym rodzicem?"),
-        Question(Headers.WHO, "pierwszy zostanie rodzicem?"),
-        Question(Headers.WHO, "jest najbardziej kreatywny?"),
+        // who...
+        Question(Headers.WHO, "lies the most?"),
+        Question(Headers.WHO, "will be the best parent?"),
+        Question(Headers.WHO, "is the most frequently late?"),
+        Question(Headers.WHO, "is the most creative?"),
 
-        // kto by to powiedział?
-        Question(Headers.SAY, "\"Ale mam pomysł na przekręt finansowy\""),
-        Question(Headers.SAY, "\"Poznał*m ją/jego wczoraj, ale już wiem, że to miłość\""),
-        Question(Headers.SAY, "\"Nudzi mi się ta gra\""),
-        Question(Headers.SAY, "\"Ja bym to zrobił* lepiej\""),
+        // who said that?
+        Question(Headers.SAY, "\"I've got new idea for tax fiddle\""),
+        Question(Headers.SAY, "\"I met him/her yesterday, but I know it's love of my life\""),
+        Question(Headers.SAY, "\"I'm bored of this game\""),
+        Question(Headers.SAY, "\"I would do it better\""),
 
-        // kto byłby w stanie to zrobić?
-        Question(Headers.DO, "Wrócić do swojej/swojego ex"),
-        Question(Headers.DO, "Nie zauważyć, że głośno obgaduje osobę, która stoi za nim"),
-        Question(Headers.DO, "Zginąć w bardzo głupi sposób"),
-        Question(Headers.DO, "Trafić do więzienia"),
+        // who is more likely to do that?
+        Question(Headers.DO, "Get back together with ex"),
+        Question(Headers.DO, "Gossip about someone and not notice that they are standing behind you."),
+        Question(Headers.DO, "Die in a very dumb way"),
+        Question(Headers.DO, "Go to jail"),
 
     )
 }
