@@ -24,7 +24,7 @@ class Game {
 
     // socket actions
     fun connectPlayer(session: WebSocketSession) {
-        // placeholder value; should delete later, but without it doesn't work - why?
+        // fixme: placeholder value; should delete later, but without it doesn't work - why?
         playerSockets["anonymous"] = session
         val randomPlayer = "player${(1000..9999).random()}"
         state.update {
@@ -56,20 +56,11 @@ class Game {
     }
 
     // game actions
-    fun startGame() {
-        state.update {
-            it.copy(
-                question = Questions.questions.random()
-            )
-        }
-    }
-
     fun loginPlayer(name: String, session: WebSocketSession): String {
         playerSockets.remove("anonymous")
         playerSockets += (name to session)
         state.update {
             it.copy(
-                question = Questions.questions.random(),
                 players = it.players + (name to true),
                 message = "$name logged in"
             )
@@ -77,6 +68,37 @@ class Game {
         println("$name logged in")
         println(playerSockets)
         return name
+    }
+
+    // little workaround to not multiply data structure
+    // I use state.players map to keep track of players, who are ready to game
+    // if everyone is ready, game will start
+    private fun startGame() {
+        if (everyoneVoted()) {
+            state.update {
+                it.copy(
+                    players = it.players.mapValues { true },
+                    question = Questions.questions.random(),
+                    gameStarted = true
+                )
+            }
+        }
+    }
+
+    // it looks like terrible practice, but will make sense in context of
+    // having multiple players on one device = one socket connection
+    // (I will add this option in next commit probably)
+    fun socketReady(session: WebSocketSession) {
+        playerSockets.forEach { entry ->
+            if (entry.value == session) {
+                state.update {
+                    it.copy(
+                        players = it.players + (entry.key to false),
+                    )
+                }
+            }
+        }
+        startGame()
     }
 
     private fun everyoneVoted(): Boolean {

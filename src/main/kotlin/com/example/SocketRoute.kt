@@ -25,6 +25,7 @@ fun Route.socket(game: Game) {
                             "login" -> {
                                 player = game.loginPlayer(body, this)
                             }
+                            "ready" -> game.socketReady(this)
                             "check_connection" -> println("Connection checked, everything is alright")
                             else -> throw Exception("action not known")
                         }
