@@ -1,7 +1,6 @@
 package com.example
 
 import com.example.models.Game
-import com.example.models.Vote
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
@@ -11,7 +10,8 @@ import kotlinx.serialization.json.Json
 fun Route.socket(game: Game) {
     route("/play") {
         webSocket {
-            var player = "anonymous"
+            var owner = "anonymous"
+            var players = listOf<String>()
             game.connectPlayer(this)
 
             try {
@@ -23,9 +23,13 @@ fun Route.socket(game: Game) {
                         when(type) {
                             "vote" -> game.vote(Json.decodeFromString(body))
                             "login" -> {
-                                player = game.loginPlayer(body, this)
+                                owner = game.loginPlayer(body, this)
+                                players = listOf(owner)
                             }
-                            "ready" -> game.socketReady(this)
+                            "add" -> {
+                                players = game.addPlayers(Json.decodeFromString<List<String>>(body))
+                            }
+                            "ready" -> game.deviceReady(body)
                             "check_connection" -> println("Connection checked, everything is alright")
                             else -> throw Exception("action not known")
                         }
@@ -34,7 +38,7 @@ fun Route.socket(game: Game) {
             } catch(e: Exception) {
                 e.printStackTrace()
             } finally {
-                game.disconnectPlayer(player, this)
+                game.disconnectPlayer(players)
             }
         }
     }

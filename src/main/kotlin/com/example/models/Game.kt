@@ -8,13 +8,12 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import java.util.concurrent.ConcurrentHashMap
 
 class Game {
-    // todo: here will be big changes because I want let many people play on the same device
-    //  so for now it is okay, but i will change it later
     private val state = MutableStateFlow(GameState())
-    private val playerSockets = ConcurrentHashMap<String, WebSocketSession>()
+    private val devicesSockets = ConcurrentHashMap<String, WebSocketSession>()
     private val gameScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var delayGameJob: Job? = null
 
@@ -25,30 +24,30 @@ class Game {
     // socket actions
     fun connectPlayer(session: WebSocketSession) {
         // fixme: placeholder value; should delete later, but without it doesn't work - why?
-        playerSockets["anonymous"] = session
+        devicesSockets["anonymous"] = session
         val randomPlayer = "player${(1000..9999).random()}"
         state.update {
             it.copy(
                 message = "$randomPlayer connected"
             )
         }
-        println("Anonymous player connected in $session")
-        println(playerSockets)
     }
 
-    fun disconnectPlayer(player: String, session: WebSocketSession) {
-        playerSockets.remove(player)
+    fun disconnectPlayer(players: List<String>) {
+        val owner = players[0]
+        devicesSockets.remove(owner)
         state.update {
             it.copy(
-                players = it.players - player
+                devicesVotesLeft = it.devicesVotesLeft - owner,
+                devicesVotesMemo = it.devicesVotesMemo - owner,
+                players = it.players.filterNot { p -> players.contains(p) },
+                message = "$owner disconnected and $players left game"
             )
         }
-        println("user $player disconnected")
-        println(playerSockets)
     }
 
     private suspend fun broadcast(state: GameState) {
-        playerSockets.values.forEach { socket ->
+        devicesSockets.values.forEach { socket ->
             socket.send(
                 Json.encodeToString(state)
             )
@@ -56,18 +55,30 @@ class Game {
     }
 
     // game actions
-    fun loginPlayer(name: String, session: WebSocketSession): String {
-        playerSockets.remove("anonymous")
-        playerSockets += (name to session)
+    fun loginPlayer(ownerName: String, session: WebSocketSession): String {
+        devicesSockets.remove("anonymous")
+        devicesSockets += (ownerName to session)
         state.update {
             it.copy(
-                players = it.players + (name to true),
-                message = "$name logged in"
+                players = it.players + ownerName,
+                devicesVotesLeft = it.devicesVotesLeft + (ownerName to 1),
+                devicesVotesMemo = it.devicesVotesMemo + (ownerName to 1),
+                message = "$ownerName logged in"
             )
         }
-        println("$name logged in")
-        println(playerSockets)
-        return name
+        return ownerName
+    }
+
+    fun addPlayers(players: List<String>): List<String> {
+        val owner = players[0]
+        state.update {
+            it.copy(
+                devicesVotesMemo = it.devicesVotesMemo + (owner to players.size),
+                players = it.players + players.drop(1),
+                message = "$owner added ${players.drop(1)} to game"
+            )
+        }
+        return players
     }
 
     // little workaround to not multiply data structure
@@ -77,56 +88,50 @@ class Game {
         if (everyoneVoted()) {
             state.update {
                 it.copy(
-                    players = it.players.mapValues { true },
+                    devicesVotesLeft = it.devicesVotesLeft.mapValues { (k, _) -> it.devicesVotesMemo[k] ?: 1},
                     question = Questions.questions.random(),
-                    gameStarted = true
+                    gameStarted = true,
+                    message = "Game started"
                 )
             }
         }
     }
 
-    // it looks like terrible practice, but will make sense in context of
-    // having multiple players on one device = one socket connection
-    // (I will add this option in next commit probably)
-    fun socketReady(session: WebSocketSession) {
-        playerSockets.forEach { entry ->
-            if (entry.value == session) {
-                state.update {
-                    it.copy(
-                        players = it.players + (entry.key to false),
-                    )
-                }
-            }
+    fun deviceReady(owner: String) {
+        state.update {
+            it.copy(
+                devicesVotesLeft = it.devicesVotesLeft + (owner to 0),
+                message = "$owner's device ready"
+            )
         }
         startGame()
     }
 
     private fun everyoneVoted(): Boolean {
-        return state.value.players.all { (_, v) -> !v }
+        return state.value.devicesVotesLeft.all { (_, v) -> v==0 }
     }
 
     fun vote(voteObject: Vote) {
-        val player = voteObject.player
+        val owner = voteObject.player
         val vote = voteObject.vote
-        if (state.value.players[player] == true) {
+        if ((state.value.devicesVotesLeft[owner] ?: 0) > 0) {
             state.update {
                 it.copy(
-                    players = it.players + (player to false),
+                    devicesVotesLeft = it.devicesVotesLeft + (owner to (it.devicesVotesLeft[owner]!!-1)),
                     votes = if (state.value.votes[vote] == null)
                         it.votes + (vote to 1)
                     else it.votes + (vote to (state.value.votes[vote]!!+1)),
+                    message = "player on $owner's device voted for $vote"
                 )
             }
         }
-        println("player $player voted for $vote")
-        println(state.value.players)
         if (everyoneVoted()) {
             state.update {
                 it.copy(
-                    winner = getWinningPlayer().also { startNewRoundDelayed() }
+                    winner = getWinningPlayer().also { startNewRoundDelayed() },
+                    message = "everyone voted, winner is ${getWinningPlayer()}"
                 )
             }
-            println("everyone voted")
         }
     }
 
@@ -141,10 +146,11 @@ class Game {
             delay(2000L)
             state.update {
                 it.copy(
-                    players = it.players.mapValues { true },
+                    devicesVotesLeft = it.devicesVotesLeft.mapValues { (k, _) -> it.devicesVotesMemo[k] ?: 1},
                     question = Questions.questions.random(),
                     votes = emptyMap(),
-                    winner = null
+                    winner = null,
+                    message = "new round"
                 )
             }
         }
