@@ -135,9 +135,10 @@ class Game {
         }
     }
 
-    private fun getWinningPlayer(): String {
-        val (k, _) = (state.value.votes).maxBy { it.value }
-        return k
+    private fun getWinningPlayer(): List<String> {
+        val (_, maxVotes) = (state.value.votes).maxBy { it.value }
+        val winners = state.value.votes.filterValues { v -> v==maxVotes }.keys.toList()
+        return winners
     }
 
     private fun startNewRoundDelayed() {
@@ -149,7 +150,7 @@ class Game {
                     devicesVotesLeft = it.devicesVotesLeft.mapValues { (k, _) -> it.devicesVotesMemo[k] ?: 1},
                     question = Questions.questions.random(),
                     votes = emptyMap(),
-                    winner = null,
+                    winner = emptyList(),
                     message = "new round"
                 )
             }

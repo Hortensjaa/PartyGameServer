@@ -10,7 +10,7 @@ import kotlinx.serialization.json.Json
 fun Route.socket(game: Game) {
     route("/play") {
         webSocket {
-            var owner = "anonymous"
+            var owner: String
             var players = listOf<String>()
             game.connectPlayer(this)
 
