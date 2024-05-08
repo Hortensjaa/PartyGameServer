@@ -136,9 +136,30 @@ class Game {
     }
 
     private fun getWinningPlayer(): List<String> {
-        val (_, maxVotes) = (state.value.votes).maxBy { it.value }
-        val winners = state.value.votes.filterValues { v -> v==maxVotes }.keys.toList()
-        return winners
+        val maxEntry = state.value.votes.maxByOrNull { it.value }
+        if (maxEntry != null) {
+            val (_, maxVotes) = maxEntry
+            val winners = state.value.votes.filterValues { v -> v == maxVotes }.keys.toList()
+            return winners
+        }
+        return state.value.players
+    }
+
+    fun endTurn(owner: String) {
+        state.update {
+            it.copy(
+                devicesVotesLeft = it.devicesVotesLeft + (owner to 0),
+                message = "$owner - your time is gone!"
+            )
+        }
+        if (everyoneVoted()) {
+            state.update {
+                it.copy(
+                    winner = getWinningPlayer().also { startNewRoundDelayed() },
+                    message = "everyone voted, winner is ${getWinningPlayer()}"
+                )
+            }
+        }
     }
 
     private fun startNewRoundDelayed() {

@@ -31,6 +31,7 @@ fun Route.socket(game: Game) {
                             }
                             "ready" -> game.deviceReady(body)
                             "check_connection" -> println("Connection checked, everything is alright")
+                            "end_turn" -> game.endTurn(body)
                             else -> throw Exception("action not known")
                         }
                     }
